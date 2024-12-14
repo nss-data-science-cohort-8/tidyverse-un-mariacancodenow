@@ -39,14 +39,9 @@ gdp_df <- gdp_df |>
 ```{r}
 year_count <- gdp_df |> 
   count(Year) |> 
-  rename(count = n)
+  rename(count = n) 
+print(year_count |> summarise(max(Year), min(Year)))
 ```
-
-```{r}
-glimpse(year_count)
-```
-
-
 ```{r}
 ggplot(year_count, aes(x = Year, y = count)) +
   geom_col()
@@ -63,4 +58,70 @@ country_count <- gdp_df |>
 ```{r}
 sprintf('%s countries are represented in the dataset.', n_distinct(country_count))
 ```
+```{r}
+country_count |> 
+  slice_min(count)
+```
+5. Create a new tibble by subsetting gdp_df to just the year 2021. Call this new tibble gdp_2021.
+
+```{r}
+gdp_2021 <- gdp_df |> 
+  filter(Year == 2021)
+```
+
+6. Use summary() to find the summary statistics for GDP per capita in 2021.
+
+```{r}
+summary(gdp_2021)
+```
+7. Create a histogram of GDP Per Capita numbers for 2021 (you may wish to adjust the number of bins for your histogram).
+
+```{r}
+ggplot(gdp_2021, aes(x = GDP_Per_Capita)) +
+  geom_histogram(bins=20)
+```
+8. Find the top 5 counties and bottom 5 countries by GDP per capita in 2021.
+
+```{r}
+slice_max(gdp_2021, GDP_Per_Capita, n=5)
+slice_min(gdp_2021, GDP_Per_Capita, n=5)
+```
+9. Now, return to the full dataset, gdp_df. Pivot the data for 1990 and 2021 (using pivot_wider() function) so that each row corresponds to a country, each column corresponds to a year, and the values in the table give the GDP_Per_Capita amount. Drop any rows that are missing values for either 1990 or 2021. Save the result to a tibble named gdp_pivoted.
+
+```{r}
+gdp_pivoted <- gdp_df |> 
+  filter(Year %in% c(1990, 2021)) |>
+  pivot_wider(id_cols=Country, names_from=Year, values_from=GDP_Per_Capita) |> 
+  drop_na()
+```
+
+10. Create a new column in gdp_pivoted named Percent_Change. This column should contain the percent change in GDP_Per_Capita from 1990 to 2021. Hint: Percent change is calculated as 100*(New Value - Old Value) / Old Value.
+
+```{r}
+gdp_pivoted <- gdp_pivoted |> 
+  mutate(Percent_Change = 100*(`2021`-`1990`)/`1990`)
+```
+
+11. How many countries experienced a negative percent change in GDP per capita from 1990 to 2021?
+
+```{r}
+gdp_pivoted |>
+  filter(Percent_Change < 0) |>
+  n_distinct()
+```
+12. Which countries had the two highest % change values in GDP per capita? Create a line plot showing these countries' GDP per capita for all years for which you have data. Put both line charts on the same plot.
+
+```{r}
+slice_max(gdp_pivoted, Percent_Change, n=2)
+```
+```{r}
+top2_list <- slice_max(gdp_pivoted, Percent_Change, n=2) |> 
+  select(Country) |> 
+  deframe()
+top2 <- gdp_df |> 
+  filter(Country %in% c(top2_list))
+ggplot(top2, aes(x=Year, y=GDP_Per_Capita, colour=Country)) +
+  geom_line()
+```
+13. Read in continents.csv contained in the data folder into a new tibble called continents. We will be using this tibble to add a new column to our dataset.
 
