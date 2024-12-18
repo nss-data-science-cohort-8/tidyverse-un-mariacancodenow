@@ -202,3 +202,68 @@ gdp_le |> slice_tail(n=5)
 ```
 
 21. Create a new tibble, named gdp_le_2021 by extracting data for the year 2021 from gdp_le. How many countries have a life expectancy of at least 80 in 2021?
+
+```{r}
+gdp_le_2021 <- gdp_le |> 
+  filter(Year == 2021)
+```
+
+```{r}
+eighty_plus <- gdp_le_2021 |> 
+  filter(Life_Expectancy >= 80) |> 
+  count()
+sprintf('%s countries have a life expectancy of at least 80 years in 2021.', eighty_plus)
+```
+
+22. Find the countries that had the top 3 largest GDP per capita figures for 2021. Create a plot showing the change in life expectancy over time for these three countries. This plot should be faceted so that each country is contained in its own figure.
+
+```{r}
+top3_list <- slice_max(gdp_le_2021, GDP_Per_Capita, n=3) |> 
+  select(Country) |> 
+  deframe()
+top3 <- gdp_le |> 
+  filter(Country %in% c(top3_list))
+ggplot(top3, aes(x=Year, y=Life_Expectancy)) +
+  geom_line() + facet_grid(cols = vars(Country))
+```
+
+23. Create a scatter plot of Life Expectancy vs GDP per Capita for the year 2021. What do you notice?
+
+```{r}
+ggplot(gdp_le_2021, aes(x=GDP_Per_Capita, y=Life_Expectancy)) +
+  geom_point()
+```
+
+There appears to be a positive correlation between GDP per capita and life expectancy: as one increases, so does the other. However, the relationship does not appear to be linear (looks closer to logarithmic).
+
+24. Find the correlation between Life Expectancy and GDP per Capita for the year 2021. What is the meaning of this number?
+
+```{r}
+gdp_le_2021 |> 
+  drop_na() |> 
+  select(GDP_Per_Capita, Life_Expectancy) |> 
+  cor()
+```
+Correlation coefficient = 0.745; this number suggests that there is a strong relationship between the two variables (i.e. where knowing once has a good chance of accurately predicting the other).
+
+25. Add a column to gdp_le_2021 and calculate the logarithm of GDP per capita. Find the correlation between the log of GDP per capita and life expectancy. How does this compare to the calculation in the previous part? Look at a scatter plot to see if the result of this calculation makes sense.
+
+```{r}
+gdp_le_2021 <- gdp_le_2021 |> 
+  mutate(log_GDP_Per_Capita = log(GDP_Per_Capita))
+```
+
+```{r}
+gdp_le_2021 |> 
+  drop_na() |> 
+  select(log_GDP_Per_Capita, Life_Expectancy) |> 
+  cor()
+```
+The correlation between the log value of GDP per capita and life expectancy appears to be even stronger, suggesting that it is a better fit.
+
+```{r}
+ggplot(gdp_le_2021, aes(x=log_GDP_Per_Capita, y=Life_Expectancy)) +
+  geom_point()
+```
+
+The trend exhibited by this scatter plot looks far more linear than the previous (non-log).
