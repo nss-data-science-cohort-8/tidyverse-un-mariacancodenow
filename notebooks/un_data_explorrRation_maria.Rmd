@@ -15,14 +15,14 @@ gdp_df <- read_csv("../data/gdp_per_capita.csv")
 ```
 
 ```{r}
-gdp_df %>% 
+gdp_df |>  
   slice_head(n=10)
 # also:
 # slice(1:10)
 ```
 
 ```{r}
-gdp_df %>% 
+gdp_df |> 
   slice_tail(n=10)
 ```
 
@@ -44,7 +44,7 @@ print(year_count |> summarise(max(Year), min(Year)))
 ```
 ```{r}
 ggplot(year_count, aes(x = Year, y = count)) +
-  geom_col()
+  geom_line()
 ```
 
 4. How many countries are represented in this dataset? Which countries have the fewest observations?
@@ -72,7 +72,7 @@ gdp_2021 <- gdp_df |>
 6. Use summary() to find the summary statistics for GDP per capita in 2021.
 
 ```{r}
-summary(gdp_2021)
+summary(gdp_2021$GDP_Per_Capita)
 ```
 7. Create a histogram of GDP Per Capita numbers for 2021 (you may wish to adjust the number of bins for your histogram).
 
@@ -108,7 +108,10 @@ gdp_pivoted <- gdp_pivoted |>
 gdp_pivoted |>
   filter(Percent_Change < 0) |>
   n_distinct()
+
+#nrow(gdp_pivoted[gdp_pivoted$percent_change<0,])
 ```
+
 12. Which countries had the two highest % change values in GDP per capita? Create a line plot showing these countries' GDP per capita for all years for which you have data. Put both line charts on the same plot.
 
 ```{r}
@@ -125,3 +128,77 @@ ggplot(top2, aes(x=Year, y=GDP_Per_Capita, colour=Country)) +
 ```
 13. Read in continents.csv contained in the data folder into a new tibble called continents. We will be using this tibble to add a new column to our dataset.
 
+```{r}
+continents <- read.csv('../data/continents.csv')
+```
+
+14. Merge gdp_df and continents. Keep only the countries that appear in both data frames. Save the result back to gdp_df.
+
+```{r}
+gdp_df <- inner_join(gdp_df, continents, by = join_by(Country))
+```
+
+15. Determine the number of countries per continent. Create a bar chart showing this.
+
+```{r}
+country_by_continent <- gdp_df |>
+  select(Continent, Country) |> 
+  distinct(Country, .keep_all = TRUE)
+  
+```
+```{r}
+ggplot(country_by_continent, aes(x=Continent)) +
+  geom_bar()
+```
+16. Create a boxplot showing GDP per capita in 2021 split out by continent. What do you notice?
+ 
+```{r}
+gdp_2021_continent <- gdp_df |>
+  filter(Year == 2021)
+```
+
+```{r}
+ggplot(gdp_2021_continent, aes(x = Continent, y = GDP_Per_Capita)) +
+  geom_boxplot()
+```
+The data suggests that countries in Europe tend to have higher GDP per Capita than countries on other continents, although the variability is quite large; the opposite is true for Africa, despite that continent having the most countries.
+
+17. Read life_expectancy.csv into a tibble named life_expectancy. Do not modify the csv file in order to read this data in.
+
+```{r}
+life_expectancy <- read_csv('../data/life_expectancy.csv', skip = 4)
+```
+18. Drop the Country Code, Indicator Name, and Indicator Code columns. Then use pivot_longer to convert your data from wide to long. That is, instead of having one row per country and multiple colums per year, we want to have multiple rows per country and a single column for year. After melting, rename the columns to Country, Year, and Life_Expectancy.
+
+```{r}
+life_expectancy <- life_expectancy |> 
+  select(-`Country Code`, -`Indicator Name`, -`Indicator Code`) |> 
+  pivot_longer(!`Country Name`, names_to = 'Year', values_to = 'Life_Expectancy') |> 
+  rename(Country = `Country Name`)
+```
+
+19. What was the first country with a life expectancy to exceed 80?
+
+```{r}
+life_expectancy |> 
+  filter(Life_Expectancy >= 80) |> 
+  slice_min(Year)
+```
+
+20. Merge gdp_df and life_expectancy, keeping all countries and years that appear in both tibbles. Save the result to a new tibble named gdp_le. If you get any errors in doing this, read them carefully and correct them. Look at the first five rows of your new data frame to confirm it merged correctly. Also, check the last five rows to make sure the data is clean and as expected.
+
+```{r}
+life_expectancy <- life_expectancy |> 
+  transform(Year = as.numeric(Year))
+```
+
+```{r}
+gdp_le <- inner_join(gdp_df, life_expectancy, join_by(Country, Year))
+```
+
+```{r}
+gdp_le |> slice_head(n=5)
+gdp_le |> slice_tail(n=5)
+```
+
+21. Create a new tibble, named gdp_le_2021 by extracting data for the year 2021 from gdp_le. How many countries have a life expectancy of at least 80 in 2021?
